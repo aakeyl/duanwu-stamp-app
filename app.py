@@ -40,15 +40,25 @@ def main():
     data = load_data()
 
     # ---------------- 兑奖核销端 ----------------
-    # ---------------- 兑奖核销端 ----------------
     if is_admin == "true":
         st.title("🎁 奖品兑换核销台")
-        st.write("工作人员专用：输入学号后按回车键查询")
+        st.write("工作人员专用：输入学号后点击查询")
 
-        # 【关键修复1】去掉了“查询进度”按钮，改为输入回车直接触发
-        student_id = st.text_input("请输入核销学号（输入后按回车）：")
+        # 初始化 session_state 来记忆查询状态
+        if 'queried_id' not in st.session_state:
+            st.session_state.queried_id = ""
 
-        if student_id:
+        student_id = st.text_input("请输入核销学号：")
+
+        # 独立的查询按钮，点击后把学号存入记忆
+        if st.button("🔍 查询进度"):
+            if student_id:
+                st.session_state.queried_id = student_id
+            else:
+                st.warning("⚠️ 请先输入学号！")
+
+        # 只要当前输入的学号和记忆中的学号匹配，就一直展示结果（完美避开嵌套冲突）
+        if st.session_state.queried_id == student_id and student_id != "":
             if student_id in data:
                 stamps = data[student_id]
 
@@ -68,19 +78,19 @@ def main():
                 if stamp_count >= 4:
                     st.info("✨ 满足条件：可参与【幸运奖】抽奖！")
 
-                    # 1. 设定库存总数
+                    # 设定库存总数
                     TOTAL_FAN = 4
                     TOTAL_CUP = 4
 
-                    # 2. 统计已经抽出的奖品数量
+                    # 统计已经抽出的奖品数量
                     drawn_fans = sum(1 for items in data.values() if "prize_fan" in items)
                     drawn_cups = sum(1 for items in data.values() if "prize_cup" in items)
 
-                    # 3. 防重复抽奖校验
+                    # 防重复抽奖校验
                     if "has_drawn" in stamps:
                         st.write("---")
                         st.success("🎯 该同学已完成抽奖。")
-                        # 【关键修复2】加大抽奖结果的字号，展示更清晰
+
                         if "prize_fan" in stamps:
                             st.write("### 🎁 抽奖结果：🍃 无叶小风扇")
                         elif "prize_cup" in stamps:
@@ -89,29 +99,28 @@ def main():
                             st.write("### 🎁 抽奖结果：再接再厉（未中幸运奖）")
 
                     else:
-                        # 【关键修复3】因为没有了外层按钮嵌套，这里的抽奖按钮现在可以完美触发了
+                        # 现在的抽奖按钮可以安全地触发了
                         if st.button("🎲 点击抽取幸运大奖"):
                             pool = ["谢谢参与"]
-                            weights = [80]
+                            weights = [60]
 
                             if drawn_fans < TOTAL_FAN:
-                                pool.append("🍃 无叶小风扇")
-                                weights.append(10)
+                                pool.append("🍃 小风扇")
+                                weights.append(20)
 
                             if drawn_cups < TOTAL_CUP:
                                 pool.append("💧 大容量水杯")
-                                weights.append(10)
+                                weights.append(20)
 
                             result = random.choices(pool, weights=weights, k=1)[0]
                             data[student_id].append("has_drawn")
 
-                            if result == "🍃 无叶小风扇":
+                            if result == "🍃 小风扇":
                                 data[student_id].append("prize_fan")
                             elif result == "💧 大容量水杯":
                                 data[student_id].append("prize_cup")
 
                             save_data(data)
-                            # 刷新页面状态展示最终结果
                             st.rerun()
 
                 elif stamp_count >= 3:
@@ -121,7 +130,7 @@ def main():
                 else:
                     st.error("集章数量不足，还需继续努力哦！")
             else:
-                st.error("未查询到该学号的打卡记录。")
+                st.error("❌ 未查询到该学号的打卡记录。")
 
     # ---------------- 玩家打卡端 ----------------
     elif game_id in GAMES:
