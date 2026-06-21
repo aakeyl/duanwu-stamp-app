@@ -40,13 +40,15 @@ def main():
     data = load_data()
 
     # ---------------- 兑奖核销端 ----------------
+    # ---------------- 兑奖核销端 ----------------
     if is_admin == "true":
         st.title("🎁 奖品兑换核销台")
-        st.write("工作人员专用：输入学号查询集章进度")
+        st.write("工作人员专用：输入学号后按回车键查询")
 
-        student_id = st.text_input("请输入核销学号：")
+        # 【关键修复1】去掉了“查询进度”按钮，改为输入回车直接触发
+        student_id = st.text_input("请输入核销学号（输入后按回车）：")
 
-        if st.button("查询进度"):
+        if student_id:
             if student_id in data:
                 stamps = data[student_id]
 
@@ -64,8 +66,7 @@ def main():
 
                 # 按照策划书设定的阶梯奖励
                 if stamp_count >= 4:
-                    st.balloons()
-                    st.info("✨ 满足条件：可兑换【参与奖】+【进阶奖】，并参与【幸运奖】抽奖！")
+                    st.info("✨ 满足条件：可参与【幸运奖】抽奖！")
 
                     # 1. 设定库存总数
                     TOTAL_FAN = 4
@@ -78,52 +79,43 @@ def main():
                     # 3. 防重复抽奖校验
                     if "has_drawn" in stamps:
                         st.write("---")
-                        st.success("🎲 该同学已完成抽奖。")
-                        # 展示抽到的结果
+                        st.success("🎯 该同学已完成抽奖。")
+                        # 【关键修复2】加大抽奖结果的字号，展示更清晰
                         if "prize_fan" in stamps:
-                            st.write("**抽奖结果：** 🍃 无叶小风扇")
+                            st.write("### 🎁 抽奖结果：🍃 无叶小风扇")
                         elif "prize_cup" in stamps:
-                            st.write("**抽奖结果：** 💧 大容量水杯")
+                            st.write("### 🎁 抽奖结果：💧 大容量水杯")
                         else:
-                            st.write("**抽奖结果：** 再接再厉（未中幸运奖）")
+                            st.write("### 🎁 抽奖结果：再接再厉（未中幸运奖）")
 
                     else:
+                        # 【关键修复3】因为没有了外层按钮嵌套，这里的抽奖按钮现在可以完美触发了
                         if st.button("🎲 点击抽取幸运大奖"):
-                            # 4. 动态构建抽奖池和概率分布
                             pool = ["谢谢参与"]
-                            weights = [80]  # 基础不中奖概率（占比80）
+                            weights = [80]
 
-                            # 如果风扇还有库存，才加入奖池
                             if drawn_fans < TOTAL_FAN:
                                 pool.append("🍃 无叶小风扇")
                                 weights.append(10)
 
-                            # 如果水杯还有库存，才加入奖池
                             if drawn_cups < TOTAL_CUP:
                                 pool.append("💧 大容量水杯")
                                 weights.append(10)
 
-                            # 执行随机抽奖
                             result = random.choices(pool, weights=weights, k=1)[0]
-
-                            # 5. 记录抽奖行为，防止刷新页面后重复抽
                             data[student_id].append("has_drawn")
 
                             if result == "🍃 无叶小风扇":
                                 data[student_id].append("prize_fan")
-                                st.success("🎉 欧气爆棚！恭喜抽中小风扇！")
                             elif result == "💧 大容量水杯":
                                 data[student_id].append("prize_cup")
-                                st.success("🎉 欧气爆棚！恭喜抽中大容量水杯！")
-                            else:
-                                st.warning("很遗憾，这次与幸运大奖擦肩而过啦~")
 
-                            # 保存数据并刷新页面状态
                             save_data(data)
+                            # 刷新页面状态展示最终结果
                             st.rerun()
 
                 elif stamp_count >= 3:
-                    st.success("🎉 满足条件：可兑换【参与奖】+【进阶奖】！")
+                    st.success("🎉 满足条件：可兑换【进阶奖】！")
                 elif stamp_count >= 2:
                     st.warning("🎈 满足条件：可兑换【参与奖】！")
                 else:
