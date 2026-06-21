@@ -92,7 +92,7 @@ def main():
                         st.success("🎯 该同学已完成抽奖。")
 
                         if "prize_fan" in stamps:
-                            st.write("### 🎁 抽奖结果：🍃 无叶小风扇")
+                            st.write("### 🎁 抽奖结果：🍃 小风扇")
                         elif "prize_cup" in stamps:
                             st.write("### 🎁 抽奖结果：💧 大容量水杯")
                         else:
